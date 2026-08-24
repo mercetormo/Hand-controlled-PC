@@ -6,8 +6,10 @@ from mediapipe.tasks.python.vision import drawing_utils
 from mediapipe.tasks.python.vision import drawing_styles
 
 import pydotool
+from pydotool import ClickEnum
 
 import math
+import time
 
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
@@ -16,23 +18,29 @@ prev_x = 0
 prev_y = 0
 
 SMOOTHING = 5
-DEAD_ZONE = 2
+DEAD_ZONE = 5
+
+PINCH_DISTANCE = 0.05
+RELEASE_DISTANCE = 0.07
 
 pinching = False
+dragging = False
+pinch_start = 0
 
-X_MIN = 0.2
-X_MAX = 0.8
+DRAG_TIME = 0.35
 
-Y_MIN = 0.2
-Y_MAX = 0.8
+X_MIN = 0.55
+X_MAX = 0.95
+
+Y_MIN = 0.55
+Y_MAX = 0.95
 
 pydotool.init()
 
 def detect_gesture(hand):
-    if index_up(hand):
+    click(hand)
+    if index_up(hand) or dragging:
         move_mouse(hand)
-    elif index_thumb(hand):
-        click(hand)
 
         
 def index_up(hand):
@@ -45,20 +53,10 @@ def index_up(hand):
     return index and middle and ring and pinky and thumb
 
 
-def index_thumb(hand):
-    index = hand[8].y < hand[6].y
-    middle = hand[12].y > hand[10].y
-    ring = hand[16].y > hand[14].y
-    pinky = hand[20].y > hand[18].y
-    thumb = hand[4].y < hand[11].y
-
-    return index and middle and ring and pinky and thumb
-
-
 def move_mouse(hand):
     global prev_x, prev_y
     
-    x_i = hand[8].x
+    x_i = 1-hand[8].x
     y_i = hand[8].y
 
     # Limita el moviment a una zona més petita de la càmera
@@ -69,7 +67,7 @@ def move_mouse(hand):
     x_norm = (x_i - X_MIN) / (X_MAX - X_MIN)
     y_norm = (y_i - Y_MIN) / (Y_MAX - Y_MIN)
 
-    target_x = int((1 - x_norm) * SCREEN_WIDTH)
+    target_x = int(x_norm * SCREEN_WIDTH)
     target_y = int(y_norm * SCREEN_HEIGHT)
 
     if (abs(target_x - prev_x) < DEAD_ZONE and abs(target_y - prev_y) < DEAD_ZONE):
@@ -84,18 +82,31 @@ def move_mouse(hand):
     prev_y = y_screen
 
 def click(hand):
-    global pinching
+    global pinching, dragging, pinch_start 
     
     dx= hand[4].y-hand[8].y
     dy= hand[4].x-hand[8].x
 
     distance = math.sqrt(dx**2 + dy**2)
 
-    if distance <0.05:
-        pydotool.left_click()
+    if distance < PINCH_DISTANCE and not pinching:
         pinching=True
+        pinch_start = time.time()
 
-    elif distance > 0.07:
-        pinching=False
+    elif distance < PINCH_DISTANCE and pinching and not dragging:
+        if time.time() - pinch_start > DRAG_TIME:
+            pydotool.click(ClickEnum.LEFT | ClickEnum.MOUSE_DOWN) #mantain left click
+            dragging = True
+
+    elif distance > RELEASE_DISTANCE and pinching:
+        if dragging:
+            pydotool.click(ClickEnum.LEFT | ClickEnum.MOUSE_UP)
+            dragging = False
+        else:
+            pydotool.left_click()
+        pinching = False
+
+
+        
     
     
