@@ -9,6 +9,11 @@ from mediapipe.tasks.python.vision import drawing_styles
 
 from handgestures import detect_gesture
 
+X_MIN = 0.55
+X_MAX = 0.90
+
+Y_MIN = 0.55
+Y_MAX = 0.90
 
 
 # Create an HandLandmarker object
@@ -39,7 +44,18 @@ while(True):
         #get x,y coordenates from the top index fingertip
         gesture=detect_gesture(hand_landmarks)
         
-    frame = cv.flip(frame, 1) #pantalla sense efecte mirall    
+    frame = cv.flip(frame, 1) #pantalla sense efecte mirall
+
+    height, width, _ = frame.shape
+
+    cv.rectangle(
+        frame,
+        (int(X_MIN * width), int(Y_MIN * height)),
+        (int(X_MAX * width), int(Y_MAX * height)),
+        (0, 255, 0),
+        2
+    )
+
     cv.imshow("Hand controll", frame)
 
 
