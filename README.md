@@ -230,23 +230,35 @@ pip install opencv-python mediapipe python-ydotool
 
 ## MediaPipe Model
 
-The project requires the MediaPipe Hand Landmarker model:
+The project requires the MediaPipe Hand Landmarker model.
 
-```text
-hand_landmarker.task
-```
+The MediaPipe Hand Landmarker model is not included in this repository.
 
-Place it in the project directory:
+Before running the application, download the official **Hand Landmarker** model from the MediaPipe documentation and place it in the root directory of the project.
+
+MediaPipe requires a compatible trained model bundle in order to detect the 21 hand landmarks. The official model can be obtained from the MediaPipe Hand Landmarker documentation.
+
+After downloading it, the project structure should look like:
 
 ```text
 Hand-controlled-PC/
-│
 ├── main.py
 ├── handgestures.py
+├── mouse.sh
 ├── hand_landmarker.task
-├── README.md
-└── venv/
+└── README.md
 ```
+
+The application expects the model at:
+
+```python
+base_options = python.BaseOptions(
+    model_asset_path="hand_landmarker.task"
+)
+```
+
+If you store the model somewhere else, update `model_asset_path` accordingly.
+
 
 ## Wayland Mouse Control
 
