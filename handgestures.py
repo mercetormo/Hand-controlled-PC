@@ -23,7 +23,8 @@ DEAD_ZONE = 5
 PINCH_DISTANCE = 0.05
 RELEASE_DISTANCE = 0.07
 
-pinching = False
+left_pinching = False
+right_pinching = False
 dragging = False
 pinch_start = 0
 
@@ -37,11 +38,21 @@ Y_MAX = 0.95
 
 pydotool.init()
 
+
+def finger_distance(hand, finger1, finger2):
+    dx = hand[finger1].x - hand[finger2].x
+    dy = hand[finger1].y - hand[finger2].y
+
+    return math.hypot(dx, dy)
+
+
+
 def detect_gesture(hand):
     click(hand)
+    if not dragging:
+        right_click(hand)
     if index_up(hand) or dragging:
         move_mouse(hand)
-
         
 def index_up(hand):
     index = hand[8].y < hand[6].y
@@ -81,32 +92,42 @@ def move_mouse(hand):
     prev_x = x_screen
     prev_y = y_screen
 
+
 def click(hand):
-    global pinching, dragging, pinch_start 
-    
-    dx= hand[4].y-hand[8].y
-    dy= hand[4].x-hand[8].x
+    global left_pinching, dragging, pinch_start
 
-    distance = math.sqrt(dx**2 + dy**2)
+    distance = finger_distance(hand, 4, 8)
 
-    if distance < PINCH_DISTANCE and not pinching:
-        pinching=True
+    if distance < PINCH_DISTANCE and not left_pinching:
+        left_pinching = True
         pinch_start = time.time()
 
-    elif distance < PINCH_DISTANCE and pinching and not dragging:
+    elif distance < PINCH_DISTANCE and left_pinching and not dragging:
+
         if time.time() - pinch_start > DRAG_TIME:
-            pydotool.click(ClickEnum.LEFT | ClickEnum.MOUSE_DOWN) #mantain left click
+            pydotool.click(ClickEnum.LEFT | ClickEnum.MOUSE_DOWN)
             dragging = True
 
-    elif distance > RELEASE_DISTANCE and pinching:
+    elif distance > RELEASE_DISTANCE and left_pinching:
+
         if dragging:
             pydotool.click(ClickEnum.LEFT | ClickEnum.MOUSE_UP)
             dragging = False
+
         else:
             pydotool.left_click()
-        pinching = False
+
+        left_pinching = False
 
 
-        
-    
-    
+def right_click(hand):
+    global right_pinching
+
+    distance = finger_distance(hand, 4, 12)
+
+    if distance < PINCH_DISTANCE and not right_pinching:
+        right_pinching = True
+        pydotool.right_click()
+
+    elif distance > RELEASE_DISTANCE and right_pinching:
+        right_pinching = False
