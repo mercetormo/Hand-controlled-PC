@@ -250,21 +250,55 @@ Hand-controlled-PC/
 
 ## Wayland Mouse Control
 
-`PyAutoGUI` relies heavily on X11 and does not work correctly for this project under Wayland.
+This project uses `ydotool` to control the mouse under Wayland. The `ydotoold` daemon must be running before starting the Python application.
 
-For this reason, the project uses **ydotool**, which sends input events through Linux `uinput`.
+The repository already includes the helper script:
 
-`ydotoold` must be running before starting the program.
-
-Example:
-
-```bash
-sudo ydotoold
+```text
+mouse.sh
 ```
 
-It can also be configured as a systemd service so that it starts automatically when the computer boots.
+The script contains:
 
-The Python application communicates with it using:
+```bash
+#!/bin/bash
+
+sudo ydotoold \
+    -p /tmp/.ydotool_socket \
+    -P 0660 \
+    -o "$(id -u):$(id -g)"
+```
+
+It starts `ydotoold` and creates the communication socket used by the Python application.
+
+The options configure:
+
+* `-p /tmp/.ydotool_socket` — path of the socket used to communicate with `ydotoold`.
+* `-P 0660` — gives read and write permissions to the socket owner and group.
+* `-o "$(id -u):$(id -g)"` — assigns the socket to the current user and group.
+
+After cloning the repository, make the script executable if necessary:
+
+```bash
+chmod +x mouse.sh
+```
+
+Then start the daemon:
+
+```bash
+./mouse.sh
+```
+
+`sudo` is required because `ydotoold` needs access to Linux `/dev/uinput` in order to generate mouse input events.
+
+Keep the daemon running and open another terminal to start the application:
+
+```bash
+source venv/bin/activate
+python3 main.py
+```
+
+The Python application connects to the daemon using:
 
 ```python
 import pydotool
@@ -274,7 +308,7 @@ pydotool.init()
 
 ## Running the Project
 
-Activate the virtual environment:
+Once `ydotoold` is running on another terminal, activate the virtual environment:
 
 ```bash
 source venv/bin/activate
